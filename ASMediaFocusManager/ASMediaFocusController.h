@@ -12,6 +12,7 @@
 
 @property (strong, nonatomic) IBOutlet UIImageView *mainImageView;
 @property (strong, nonatomic) IBOutlet UIView *contentView;
+@property (strong, nonatomic) UIView *buttonPanel;
 
 - (void)updateOrientationAnimated:(BOOL)animated;
 

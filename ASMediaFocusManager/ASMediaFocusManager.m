@@ -31,7 +31,7 @@ static CGFloat const kAnimationDuration = 0.5;
         self.backgroundColor = [UIColor colorWithWhite:0 alpha:0.8];
         self.elasticAnimation = YES;
     }
-    
+
     return self;
 }
 
@@ -46,7 +46,7 @@ static CGFloat const kAnimationDuration = 0.5;
 - (void)installOnView:(UIView *)view
 {
     UITapGestureRecognizer *tapGesture;
-    
+
     tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleFocusGesture:)];
     [view addGestureRecognizer:tapGesture];
     view.userInteractionEnabled = YES;
@@ -62,7 +62,7 @@ static CGFloat const kAnimationDuration = 0.5;
 
     viewController = [[ASMediaFocusController alloc] initWithNibName:nil bundle:nil];
     tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleDefocusGesture:)];
-    [viewController.view addGestureRecognizer:tapGesture];    
+    [viewController.view addGestureRecognizer:tapGesture];
     viewController.mainImageView.image = image;
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -145,6 +145,8 @@ static CGFloat const kAnimationDuration = 0.5;
                          imageView.transform = initialTransform;
                          imageView.transform = CGAffineTransformIdentity;
                          imageView.frame = frame;
+
+                         focusViewController.buttonPanel.alpha = 1;
                          
                          focusViewController.view.backgroundColor = self.backgroundColor;
                      }
@@ -175,6 +177,7 @@ static CGFloat const kAnimationDuration = 0.5;
                          bounds = self.mediaView.bounds;
                          contentView.bounds = (self.elasticAnimation?[self rectInsetsForRect:bounds ratio:kAnimateElasticSizeRatio]:bounds);
                          gesture.view.backgroundColor = [UIColor clearColor];
+                         self.focusViewController.buttonPanel.alpha = 0;
                      }
                      completion:^(BOOL finished) {
                          [UIView animateWithDuration:(self.elasticAnimation?self.animationDuration*kAnimateElasticDurationRatio:0)
