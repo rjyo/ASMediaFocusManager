@@ -62,6 +62,7 @@ static CGFloat const kAnimationDuration = 0.5;
 
     viewController = [[ASMediaFocusController alloc] initWithNibName:nil bundle:nil];
     tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleDefocusGesture:)];
+    tapGesture.cancelsTouchesInView = NO;
     [viewController.view addGestureRecognizer:tapGesture];
     viewController.mainImageView.image = image;
 
