@@ -8,6 +8,7 @@
 
 #import "ASMediaFocusManager.h"
 #import "ASMediaFocusController.h"
+#import "EGOImageLoader.h"
 
 static CGFloat const kAnimateElasticSizeRatio = 0.03;
 static CGFloat const kAnimateElasticDurationRatio = 0.6;
@@ -20,30 +21,6 @@ static CGFloat const kAnimationDuration = 0.5;
 @end
 
 @implementation ASMediaFocusManager
-
-// Taken from https://github.com/rs/SDWebImage/blob/master/SDWebImage/SDWebImageDecoder.m
-- (UIImage *)decodedImageWithImage:(UIImage *)image
-{
-    CGImageRef imageRef = image.CGImage;
-    CGSize imageSize = CGSizeMake(CGImageGetWidth(imageRef), CGImageGetHeight(imageRef));
-    CGRect imageRect = (CGRect){.origin = CGPointZero, .size = imageSize};
-    
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-    CGContextRef context = CGBitmapContextCreate(NULL, imageSize.width, imageSize.height, CGImageGetBitsPerComponent(imageRef), CGImageGetBytesPerRow(imageRef), colorSpace, CGImageGetBitmapInfo(imageRef));
-    CGColorSpaceRelease(colorSpace);
-    
-    // If failed, return undecompressed image
-    if (!context) return image;
-    
-    CGContextDrawImage(context, imageRect, imageRef);
-    CGImageRef decompressedImageRef = CGBitmapContextCreateImage(context);
-    
-    CGContextRelease(context);
-    
-    UIImage *decompressedImage = [UIImage imageWithCGImage:decompressedImageRef];
-    CGImageRelease(decompressedImageRef);
-    return decompressedImage;
-}
 
 - (id)init
 {
@@ -79,11 +56,9 @@ static CGFloat const kAnimationDuration = 0.5;
 {
     ASMediaFocusController *viewController;
     UITapGestureRecognizer *tapGesture;
-    UIImage *image;
-    
-    image = [self.delegate mediaFocusManager:self imageForView:mediaView];
-    if(image == nil)
-        return nil;
+
+    UIImage *image = [self.delegate mediaFocusManager:self imageForView:mediaView];
+    if(image == nil) return nil;
 
     viewController = [[ASMediaFocusController alloc] initWithNibName:nil bundle:nil];
     tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleDefocusGesture:)];
@@ -91,15 +66,13 @@ static CGFloat const kAnimationDuration = 0.5;
     viewController.mainImageView.image = image;
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        UIImage *image;
-        NSString *path;
-        
-        path = [self.delegate mediaFocusManager:self mediaPathForView:mediaView];
-        image = [[UIImage alloc] initWithContentsOfFile:path];
-        image = [self decodedImageWithImage:image];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            viewController.mainImageView.image = image;
-        });
+        NSString *path = [self.delegate mediaFocusManager:self mediaPathForView:mediaView];
+        EGOImageLoader *loader = [EGOImageLoader sharedImageLoader];
+        [loader loadImageForURL:[NSURL URLWithString:path] completion:^(UIImage *loadedImage, NSURL *imageURL, NSError *error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                viewController.mainImageView.image = loadedImage;
+            });
+        }];
     });
 
     return viewController;
@@ -144,6 +117,8 @@ static CGFloat const kAnimationDuration = 0.5;
     imageView.bounds = mediaView.bounds;
     
     [UIView animateWithDuration:self.animationDuration
+                     delay:0
+                     options:UIViewAnimationOptionCurveEaseInOut
                      animations:^{
                          CGRect frame;
                          CGRect initialFrame;
@@ -191,8 +166,9 @@ static CGFloat const kAnimationDuration = 0.5;
     
     contentView = self.focusViewController.mainImageView;
     [UIView animateWithDuration:self.animationDuration
+                     delay:0
+                     options:UIViewAnimationOptionCurveEaseInOut
                      animations:^{
-                         
                          self.focusViewController.contentView.transform = CGAffineTransformIdentity;
                          contentView.center = [contentView.superview convertPoint:self.mediaView.center fromView:self.mediaView.superview];
                          contentView.transform = self.mediaView.transform;
